@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDownCircle } from "lucide-react";
+import { ArrowDownCircle, ArrowRight } from "lucide-react"; 
 
-// assets 폴더 이미지 import
+// assets 폴더 이미지 import (복구)
 import arrow1 from "../assets/arrow-1.svg";
 import image from "../assets/image.svg";
 import vector2 from "../assets/vector-2.svg";
@@ -10,10 +10,11 @@ import vector3 from "../assets/vector-3.svg";
 import vector from "../assets/vector.svg";
 
 const navigationItems = [
-  { id: 1, label: "지표산정기준", marginLeft: "ml-0", marginTop: "mt-[11px]" },
-  { id: 2, label: "업데이트 기록", marginLeft: "ml-[67px]", marginTop: "mt-[26px]" },
-  { id: 3, label: "개발 과정", marginLeft: "ml-[37px]", marginTop: "mt-7" },
-  { id: 4, label: "개발 팀", marginLeft: "ml-[55px]", marginTop: "mt-7" },
+  { id: 1, label: "지표산정기준", marginLeft: "ml-0", marginTop: "mt-[11px]", path: "/criteria" }, 
+  { id: 2, label: "업데이트 기록", marginLeft: "ml-[67px]", marginTop: "mt-[26px]", path: "#" },
+  { id: 3, label: "개발 과정", marginLeft: "ml-[37px]", marginTop: "mt-7", path: "/development" },
+  // 경로를 /team으로 변경
+  { id: 4, label: "개발 팀", marginLeft: "ml-[55px]", marginTop: "mt-7", path: "/team" }, 
 ];
 
 const iconData = [
@@ -28,7 +29,6 @@ export const LandingPage = () => {
 
   useEffect(() => {
     const handleResize = () => {
-      // 화면 너비에 맞춰서 비율 계산 (1500px 기준)
       const scaleRatio = window.innerWidth / 1500;
       setScale(scaleRatio);
     };
@@ -41,13 +41,10 @@ export const LandingPage = () => {
   const handleDownload = () => alert("준비중입니다");
   const handleNext = () => navigate("/start");
 
-  // 스케일링된 실제 높이 계산 (원본높이 983px * 비율)
   const scaledHeight = 983 * scale;
 
   return (
-    // overflow-y-auto를 추가하여 세로 스크롤 허용
     <div className="w-full h-screen bg-black overflow-y-auto overflow-x-hidden">
-      {/* 스케일링된 높이만큼 영역을 확보해주는 래퍼 */}
       <div style={{ width: '100%', height: `${scaledHeight}px` }}>
         <div 
           style={{ 
@@ -66,7 +63,11 @@ export const LandingPage = () => {
 
           <nav className="absolute top-[45px] left-[750px] w-[611px] h-[65px] flex" role="navigation">
             {navigationItems.map((item) => (
-              <div key={item.id} className={`${item.marginTop} ${item.id === 1 ? "h-5 w-[117px]" : item.id === 2 ? "w-[145px] h-[22px]" : item.id === 3 ? "w-[85px] h-5" : "w-[72px] h-5"} ${item.marginLeft} ${item.id === 1 ? "self-center" : ""} font-medium text-white text-[21px] tracking-[-0.53px] leading-[normal] whitespace-nowrap cursor-pointer hover:text-gray-300 transition-colors`}>
+              <div 
+                key={item.id} 
+                onClick={() => item.path && navigate(item.path)}
+                className={`${item.marginTop} ${item.id === 1 ? "h-5 w-[117px]" : item.id === 2 ? "w-[145px] h-[22px]" : item.id === 3 ? "w-[85px] h-5" : "w-[72px] h-5"} ${item.marginLeft} ${item.id === 1 ? "self-center" : ""} font-medium text-white text-[21px] tracking-[-0.53px] leading-[normal] whitespace-nowrap cursor-pointer hover:text-gray-300 transition-colors`}
+              >
                 {item.label}
               </div>
             ))}

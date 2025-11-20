@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Menu, X, RefreshCw, TrendingUp, Activity, AlertTriangle, CheckCircle, Zap } from "lucide-react";
+import { ArrowLeft, Menu, X, RefreshCw, TrendingUp, Activity, AlertTriangle, CheckCircle, Zap, Download } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { supabase } from "../lib/supabaseClient";
 import { getFinancialAnalysis } from "../lib/gemini";
 
-// --- [컴포넌트] 개별 지표 카드 (새로운 디자인) ---
+// --- [컴포넌트] 개별 지표 카드 ---
 const StatCard = ({ label, value, color, icon: Icon, description }) => (
-  <div className="bg-white rounded-xl p-5 shadow-lg flex flex-col justify-between h-full border-b-4 border-l-4 hover:shadow-xl transition-shadow" style={{ borderColor: color }}>
+  <div className="bg-white rounded-xl p-5 shadow-lg flex flex-col justify-between h-full border-b-4 border-l-4 hover:shadow-2xl transition-shadow" style={{ borderColor: color }}>
     <div className="flex items-center justify-between mb-2">
       <div className="text-sm font-semibold uppercase text-gray-500">{label}</div>
       <Icon className="w-5 h-5" style={{ color }} />
@@ -19,7 +19,7 @@ const StatCard = ({ label, value, color, icon: Icon, description }) => (
   </div>
 );
 
-// --- 커스텀 정렬 함수 (분기 순서를 맞추기 위해) ---
+// --- 커스텀 정렬 함수 ---
 const sortFinancialData = (a, b) => {
     const yearA = parseInt(a.period.slice(0, 4));
     const yearB = parseInt(b.period.slice(0, 4));
@@ -27,21 +27,22 @@ const sortFinancialData = (a, b) => {
 
     const quarterOrder = { '1Q': 1, '2Q': 2, 'Semi': 2, '3Q': 3, '4Q': 4, 'Annual': 4 };
     
-    const quarterA = a.period.split('-')[1] || a.period.slice(5);
-    const quarterB = b.period.split('-')[1] || b.period.slice(5);
-
-    const orderA = quarterOrder[quarterA];
-    const orderB = quarterOrder[quarterB];
+    const getQuarterString = (period) => {
+        const parts = period.split('-');
+        return parts.length > 1 ? parts[1] : period.slice(4);
+    };
     
-    if (orderA !== orderB) return orderA - orderB;
+    const orderA = quarterOrder[getQuarterString(a.period)] || 5;
+    const orderB = quarterOrder[getQuarterString(b.period)] || 5;
 
-    return 0; 
+    return orderA - orderB;
 };
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState('단일 분석'); 
   
   // 기업 정보
   const selectedCompany = location.state?.selectedCompany || { company_name: "샘플전자", stock_code: "005930" };
@@ -53,7 +54,7 @@ export const Dashboard = () => {
   const [weights, setWeights] = useState({ liquidity: 25, stability: 25, profitability: 25, activity: 25 });
   const [loading, setLoading] = useState(true);
 
-  // 1. Supabase 데이터 전체 조회 (2020~2025 등 전체 기간)
+  // 1. Supabase 데이터 전체 조회
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -63,37 +64,29 @@ export const Dashboard = () => {
           .eq('stock_code', selectedCompany.stock_code)
           .order('period', { ascending: true });
 
-        if (error) throw error;
-
-        let sortedData = data || [];
-        sortedData.sort(sortFinancialData); 
-
-        if (sortedData.length > 0) {
+        if (data && data.length > 0) {
+          let sortedData = data;
+          sortedData.sort(sortFinancialData); 
           setFinanceHistory(sortedData);
           setLatestData(sortedData[sortedData.length - 1]);
         } else {
-          // 데이터가 없을 경우 2020~2025년 더미 데이터 생성 (그래프 확인용)
+          // 데이터가 없을 경우 더미 데이터 생성
           const dummyHistory = [
-            { period: '2020-1Q', roe: 5, current_ratio: 100, debt_to_equity_ratio: 150, interest_coverage_ratio: 2, altman_z_score: 1.2 },
-            { period: '2021-1Q', roe: 8, current_ratio: 110, debt_to_equity_ratio: 140, interest_coverage_ratio: 3, altman_z_score: 1.5 },
-            { period: '2022-1Q', roe: 12, current_ratio: 130, debt_to_equity_ratio: 100, interest_coverage_ratio: 5, altman_z_score: 2.0 },
-            { period: '2023-1Q', roe: 10, current_ratio: 125, debt_to_equity_ratio: 110, interest_coverage_ratio: 4, altman_z_score: 1.8 },
-            { period: '2024-1Q', roe: 15, current_ratio: 150, debt_to_equity_ratio: 80, interest_coverage_ratio: 8, altman_z_score: 3.0 },
-            { period: '2025-2Q', roe: 18, current_ratio: 200, debt_to_equity_ratio: 50, interest_coverage_ratio: 10, altman_z_score: 3.5 },
+            { period: '2020-1Q', current_ratio: 100, debt_to_equity_ratio: 150, roe: 5, interest_coverage_ratio: 2, altman_z_score: 1.2, piotroski_f_score: 5, total_assets: 100000000, total_liabilities: 45000000, total_equity: 55000000 },
+            { period: '2021-1Q', current_ratio: 120, debt_to_equity_ratio: 130, roe: 8, interest_coverage_ratio: 4, altman_z_score: 1.5, piotroski_f_score: 6, total_assets: 110000000, total_liabilities: 47826087, total_equity: 62173913 },
+            { period: '2022-1Q', current_ratio: 150, debt_to_equity_ratio: 100, roe: 12, interest_coverage_ratio: 8, altman_z_score: 2.0, piotroski_f_score: 7, total_assets: 120000000, total_liabilities: 54545455, total_equity: 65454545 },
+            { period: '2023-1Q', current_ratio: 180, debt_to_equity_ratio: 60, roe: 14, interest_coverage_ratio: 9, altman_z_score: 3.0, piotroski_f_score: 8, total_assets: 130000000, total_liabilities: 48750000, total_equity: 81250000 },
           ];
-          setFinanceHistory(dummyHistory.sort(sortFinancialData));
+          setFinanceHistory(dummyHistory);
           setLatestData(dummyHistory[dummyHistory.length - 1]);
         }
-      } catch (err) {
-        console.error("데이터 로딩 실패:", err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { console.error("데이터 로딩 실패:", err); }
+      finally { setLoading(false); }
     };
     fetchData();
   }, [selectedCompany]);
 
-  // 2. AI 분석 및 위험 점수 계산 (최신 데이터 기준)
+  // 2. AI 분석 및 위험 점수 계산
   useEffect(() => {
     if (!latestData) return;
 
@@ -133,6 +126,92 @@ export const Dashboard = () => {
   const handleWeightChange = (e) => {
     setWeights({ ...weights, [e.target.name]: Number(e.target.value) });
   };
+  
+  const handleModeChange = (mode) => {
+      setAnalysisMode(mode);
+      if (mode === '업종 비교') {
+          navigate('/industry-compare', { state: { selectedCompany: selectedCompany, latestData: latestData }});
+      } else if (mode === '지역 비교') {
+          navigate('/region-compare', { state: { selectedCompany: selectedCompany, latestData: latestData }});
+      }
+  };
+
+  // --- [핵심 기능] 종합 보고서 (Markdown) 다운로드 함수 ---
+  const handleDownloadReport = async () => {
+    if (!latestData) {
+        alert("최신 재무 데이터가 준비되지 않아 보고서를 생성할 수 없습니다.");
+        return;
+    }
+    
+    try {
+        const { data: fullReportData, error } = await supabase
+            .from('financial_reports')
+            .select('*')
+            .eq('stock_code', selectedCompany.stock_code)
+            .order('period', { ascending: false })
+            .limit(1)
+            .single(); 
+
+        if (error || !fullReportData) throw error || new Error("상세 재무 데이터 조회 실패");
+
+        const formatValue = (key, value) => {
+            if (value === null || value === undefined) return 'N/A';
+            if (key.includes('assets') || key.includes('liabilities') || key.includes('equity')) {
+                 return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(value);
+            }
+            if (key.includes('ratio') || key.includes('roe')) return `${Number(value).toFixed(2)} %`;
+            if (key.includes('score')) return Number(value).toFixed(2);
+            if (key.includes('coverage')) return `${Number(value).toFixed(2)} 배`;
+            return value;
+        };
+        
+        let reportContent = `# ${selectedCompany.company_name} - 종합 재무 분석 보고서\n`;
+        reportContent += `\n**기준 보고서 기간:** ${fullReportData.period}\n`;
+        reportContent += `**생성 일자:** ${new Date().toLocaleDateString('ko-KR')}\n\n`;
+        reportContent += `--- \n\n`;
+
+        reportContent += `## 1. Gemini AI 심층 분석 결과\n`;
+        reportContent += `\n**종합 위험 점수:** ${riskScore}점\n`;
+        reportContent += `\n${aiAnalysis.replace(/\*\*/g, '').replace(/✅/g, '-')}\n`;
+        reportContent += `\n--- \n\n`;
+
+        reportContent += `## 2. 핵심 성과 지표 (Key Performance Indicators)\n`;
+        reportContent += `\n| 지표명 | 값 | 평가 기준 |\n`;
+        reportContent += `| :--- | :--- | :--- |\n`;
+        reportContent += `| 유동 비율 (Current Ratio) | ${formatValue('current_ratio', fullReportData.current_ratio)} | 단기 지불 능력 (200% 이상 우수) |\n`;
+        reportContent += `| 부채 비율 (Debt/Equity Ratio) | ${formatValue('debt_to_equity_ratio', fullReportData.debt_to_equity_ratio)} | 재무 안정성 (100% 이하 우수) |\n`;
+        reportContent += `| 자기자본이익률 (ROE) | ${formatValue('roe', fullReportData.roe)} | 자본 활용 수익성 (높을수록 우수) |\n`;
+        reportContent += `| 이자보상 배율 (Interest Coverage Ratio) | ${formatValue('interest_coverage_ratio', fullReportData.interest_coverage_ratio)} | 이자 부담 능력 (1.5배 이상 안전) |\n`;
+        reportContent += `\n--- \n\n`;
+
+        reportContent += `## 3. 종합 재무 건전성 및 효율 지표 (Raw Data)\n`;
+        reportContent += `\n| 지표명 | 값 |\n`;
+        reportContent += `| :--- | :--- |\n`;
+        reportContent += `| Altman Z-Score | ${formatValue('altman_z_score', fullReportData.altman_z_score)} |\n`;
+        reportContent += `| Piotroski F-Score | ${formatValue('piotroski_f_score', fullReportData.piotroski_f_score)} |\n`;
+        reportContent += `| 총자산 (Total Assets) | ${formatValue('total_assets', fullReportData.total_assets)} |\n`;
+        reportContent += `| 총부채 (Total Liabilities) | ${formatValue('total_liabilities', fullReportData.total_liabilities)} |\n`;
+        reportContent += `| 총자본 (Total Equity) | ${formatValue('total_equity', fullReportData.total_equity)} |\n`;
+        reportContent += `| 영업현금흐름 (Operating Cash Flow) | ${formatValue('operating_cash_flow', fullReportData.operating_cash_flow)} |\n`;
+        reportContent += `| 매출액 (Revenue) | ${formatValue('revenue', fullReportData.revenue)} |\n`;
+        reportContent += `\n--- \n\n`;
+        reportContent += `\n*본 보고서는 재무 데이터와 AI 분석을 기반으로 작성되었으며, 투자 결정의 참고 자료로만 활용해야 합니다.*\n`;
+
+
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), reportContent], { type: 'text/markdown;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${selectedCompany.company_name}_종합분석보고서_${fullReportData.period}.md`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+    } catch (error) {
+        console.error("보고서 다운로드 실패:", error);
+        alert(`보고서 다운로드 중 오류가 발생했습니다. DB 연결 및 데이터 존재 여부를 확인해주세요: ${error.message}`);
+    }
+  };
 
   // 4대 지표 차트 데이터 매핑
   const chartData = financeHistory.map(item => ({
@@ -150,11 +229,13 @@ export const Dashboard = () => {
     활동성: { value: `${Number(latestData?.interest_coverage_ratio || 0).toFixed(1)}배`, color: '#ec6a00', icon: Activity, desc: "이자보상배율 (3배 이상 안정)" },
   };
 
+
   if (loading) return <div className="w-full h-screen flex items-center justify-center bg-black text-white text-3xl">데이터 로딩 중...</div>;
 
   return (
-    <div className="w-full h-screen bg-[#1a1a1a] overflow-y-auto overflow-x-hidden">
-      {/* --- Header --- */}
+    <div className="w-full min-h-screen bg-[#1a1a1a] overflow-y-auto overflow-x-hidden">
+      
+      {/* --- Header (Sticky & Dark Tone) --- */}
       <header className="sticky top-0 bg-gray-900/90 shadow-lg p-4 flex justify-between items-center z-30 backdrop-blur-sm border-b border-gray-700">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/search')} className="flex items-center gap-2 px-4 py-2 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors">
@@ -164,15 +245,47 @@ export const Dashboard = () => {
             {selectedCompany.company_name} <span className="text-base text-gray-400">({latestData?.period || '최신'})</span>
           </h1>
         </div>
-        <button onClick={() => setSidebarOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-md transition-colors">
-          <Menu /> <span className="font-bold">가중치 설정</span>
-        </button>
+        
+        {/* 보고서 다운로드 및 사이드바 버튼 그룹 */}
+        <div className="flex items-center gap-4">
+            <button 
+              onClick={handleDownloadReport} // 종합 보고서 다운로드 함수 연결
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 shadow-md cursor-pointer transition-colors"
+            >
+                <Download className="w-5 h-5" />
+                <span className="font-bold">종합 보고서 다운로드 (.md)</span>
+            </button>
+
+            <button onClick={() => setSidebarOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-md transition-colors">
+              <Menu /> <span className="font-bold">가중치 설정</span>
+            </button>
+        </div>
+
       </header>
 
       {/* --- Main Content Area --- */}
       <div className="max-w-7xl mx-auto p-4 md:p-8">
         
-        {/* 1. 종합 위험 지수 및 AI 분석 */}
+        {/* 0. 분석 모드 탭 */}
+        <div className="flex justify-center mb-8">
+            <div className="flex bg-gray-700 rounded-full shadow-inner border border-gray-600">
+                {['단일 분석', '업종 비교', '지역 비교'].map(mode => (
+                    <button
+                        key={mode}
+                        onClick={() => handleModeChange(mode)}
+                        className={`px-6 py-2 rounded-full text-sm font-bold transition-colors ${
+                            analysisMode === mode
+                                ? 'bg-blue-600 text-white shadow-md'
+                                : 'text-gray-300 hover:bg-gray-600'
+                        }`}
+                    >
+                        {mode}
+                    </button>
+                ))}
+            </div>
+        </div>
+
+        {/* 1. 종합 위험 지수 및 AI 분석 (Grid Layout) */}
         <section className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
           
           {/* A. 종합 점수 카드 (2/5 너비) */}
@@ -191,7 +304,7 @@ export const Dashboard = () => {
             <h3 className="text-2xl font-bold text-blue-400 mb-4 flex items-center gap-2">
               <Zap className="w-6 h-6" /> Gemini AI 정밀 진단
             </h3>
-            <div className className="text-base leading-relaxed text-gray-200 whitespace-pre-line max-h-[250px] overflow-y-auto">
+            <div className="text-base leading-relaxed text-gray-200 whitespace-pre-line max-h-[250px] overflow-y-auto">
               {aiAnalysis}
             </div>
           </div>
@@ -282,6 +395,7 @@ export const Dashboard = () => {
         </div>
       </div>
       
+      {/* 사이드바 오버레이 */}
       {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setSidebarOpen(false)} />}
     </div>
   );
