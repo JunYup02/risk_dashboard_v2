@@ -1,30 +1,40 @@
+/**
+ * [CriteriaPage.jsx]
+ * 기업 분석에 사용되는 4대 핵심 재무 지표(유동성, 안정성, 수익성, 활동성)의
+ * 산정 기준, 계산 공식, 평가 기준을 사용자에게 설명하는 정보 제공 페이지입니다.
+ */
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+// 페이지 뒤로가기 버튼 등에 사용될 화살표 아이콘
 import { ArrowLeft } from "lucide-react";
 
+/* --- [네비게이션 메뉴 설정] --- */
 const navigationItems = [
-  { id: 1, label: "지표산정기준", path: "/criteria" },
-  { id: 2, label: "업데이트 기록", path: "#" },
+  { id: 1, label: "지표산정기준", path: "/criteria" }, // 현재 활성화될 메뉴
+  { id: 2, label: "업데이트 기록", path: "/updates" },
   { id: 3, label: "개발 과정", path: "/development" },
   { id: 4, label: "개발 팀", path: "/team" }, 
 ];
 
 export const CriteriaPage = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // 페이지 이동을 위한 훅
+  
+  // [상태] scale: 반응형 디자인을 위한 화면 배율
   const [scale, setScale] = useState(1);
 
-  // 스케일링 로직
+  // [Effect] 윈도우 크기에 따른 스케일링 로직
   useEffect(() => {
     const handleResize = () => {
       const scaleRatio = window.innerWidth / 1500;
       setScale(scaleRatio);
     };
     window.addEventListener('resize', handleResize);
-    handleResize();
+    handleResize(); // 초기 실행
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 지표 설명 콘텐츠 (4대 지표)
+  /* --- [핵심 콘텐츠 데이터] --- */
   const criteriaContent = [
     { 
       title: "1. 유동성 (단기 상환 능력)", 
@@ -57,47 +67,61 @@ export const CriteriaPage = () => {
   ];
 
   return (
+    // 전체 배경: 검은색
     <div className="w-full h-screen bg-black overflow-y-auto overflow-x-hidden">
-      {/* 스케일링 래퍼 */}
+      
+      {/* 스케일링을 위한 중앙 정렬 래퍼 */}
       <div style={{ width: '100%', minHeight: '100vh', paddingBottom: '50px' }} className="flex justify-center"> 
+        
+        {/* 실제 컨텐츠 영역 */}
         <div 
           style={{ 
             transform: `scale(${scale})`, 
-            transformOrigin: 'top center', // 중앙 기준 정렬
+            transformOrigin: 'top center', 
             width: '1500px', 
             minHeight: '100vh',
           }}
           className="relative mx-auto bg-[linear-gradient(0deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.2)_100%),linear-gradient(180deg,rgba(170,170,170,1)_24%,rgba(68,68,68,1)_100%)]"
         >
           
-          {/* Header (배경 영역 + Logo + Nav 통합) */}
+          {/* --- [헤더 영역] --- */}
           <header className="w-full h-[126px] relative flex items-center justify-between px-[100px] z-20"> 
              
-             {/* 1. 배경 (Header 내부에 absolute로 배치하여 1961px 너비 구현) */}
+             {/* 1. 헤더 배경 */}
              <div className="absolute top-0 left-[-30px] w-[1961px] h-[126px] bg-[linear-gradient(0deg,rgba(0,0,0,0.2)_0%,rgba(0,0,0,0.2)_100%),linear-gradient(0deg,rgba(170,170,170,1)_0%,rgba(170,170,170,1)_100%)]" />
 
-             {/* 2. Logo (z-index로 앞으로) */}
-             <h1 className="w-[233px] font-sans font-semibold text-white text-[34px] tracking-[-0.85px] leading-[normal] z-10 ml-[0px]">
+             {/* 2. 로고 텍스트 */}
+             <h1 
+               onClick={() => navigate('/')} 
+               className="w-[233px] font-sans font-semibold text-white text-[34px] tracking-[-0.85px] leading-[normal] z-10 ml-[0px] cursor-pointer hover:opacity-80 transition-opacity" 
+             >
                 Balance Sheet
              </h1>
 
-             {/* 3. Nav (Flex 정렬) */}
+             {/* 3. 네비게이션 메뉴 */}
              <nav className="h-[65px] flex items-center justify-end gap-8 z-10" role="navigation">
                 {navigationItems.map((item) => (
                   <div 
                     key={item.id} 
                     onClick={() => navigate(item.path)} 
-                    className={`font-medium text-white text-[21px] tracking-[-0.53px] leading-[normal] whitespace-nowrap cursor-pointer hover:text-gray-300 transition-colors ${item.id === 1 ? "border-b-2 border-white" : ""}`}
+                    // [수정] relative 클래스 추가 및 border 제거
+                    className="font-medium text-white text-[21px] tracking-[-0.53px] leading-[normal] whitespace-nowrap cursor-pointer hover:text-gray-300 transition-colors relative"
                   >
                     {item.label}
+                    {/* [수정] 활성화된 아이템에만 '절대 위치(absolute)'로 밑줄 표시. 레이아웃에 영향을 주지 않음 */}
+                    {item.id === 1 && (
+                      <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-white pointer-events-none" />
+                    )}
                   </div>
                 ))}
              </nav>
           </header>
           
-          {/* Content Area - Header 아래에 마진을 주고 중앙 배치 */}
+          {/* --- [메인 콘텐츠 영역] --- */}
           <div className="mt-[54px] mx-auto w-[1300px] relative">
+            
             <div className="bg-white/95 backdrop-blur-sm p-12 rounded-xl shadow-2xl mb-10">
+              
               <h2 className="text-4xl font-bold text-gray-800 mb-8 border-b-4 border-blue-600 pb-2">
                 <span className="text-blue-600">핵심 지표</span> 산정 기준 및 분석 가이드
               </h2>

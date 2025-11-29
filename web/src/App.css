@@ -1,42 +1,96 @@
+/*
+  [App.css]
+  애플리케이션 전반에 적용되는 스타일을 정의하는 파일입니다.
+  React 프로젝트의 기본 레이아웃, 로고 애니메이션, 반응형 동작 등을 설정합니다.
+*/
+
+/* #root: React 앱이 마운트(렌더링)되는 최상위 컨테이너입니다.
+  (index.html 파일에 있는 <div id="root"></div> 태그를 가리킵니다.)
+*/
 #root {
+  /* 화면이 아무리 커져도 내용물 너비가 1280px을 넘지 않도록 제한합니다. */
   max-width: 1280px;
+  
+  /* 상하 여백은 0, 좌우 여백은 auto로 설정하여 화면 중앙에 배치합니다. */
   margin: 0 auto;
+  
+  /* 내부 콘텐츠와 테두리 사이에 2rem(약 32px)의 여백을 줍니다. */
   padding: 2rem;
+  
+  /* 내부 텍스트와 인라인 요소들을 가운데 정렬합니다. */
   text-align: center;
 }
 
+/* .logo: 로고 이미지에 대한 공통 스타일입니다. 
+*/
 .logo {
+  /* 로고 높이를 글자 크기의 6배(약 96px)로 설정합니다. */
   height: 6em;
+  
+  /* 로고 주변에 여백을 줍니다. */
   padding: 1.5em;
+  
+  /* [성능 최적화] 브라우저에게 'filter' 속성이 곧 변할 것이라고 미리 알려줍니다.
+     이를 통해 애니메이션이나 전환 효과가 더 부드럽게 작동하도록 돕습니다. */
   will-change: filter;
+  
+  /* 필터 효과(그림자 등)가 변할 때 0.3초(300ms) 동안 부드럽게 변하도록 설정합니다. */
   transition: filter 300ms;
 }
+
+/* .logo:hover: 로고 위에 마우스를 올렸을 때의 스타일입니다. 
+*/
 .logo:hover {
+  /* 로고 주변에 보라색 계열(#646cffaa)의 부드러운 그림자(Drop Shadow)를 만듭니다. */
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
+/* .logo.react:hover: 'react' 클래스를 가진 로고(React 로고)에 마우스를 올렸을 때입니다. 
+*/
 .logo.react:hover {
+  /* React 로고는 파란색 계열(#61dafbaa)의 그림자를 띄우도록 덮어씁니다. */
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* @keyframes: 애니메이션의 동작 과정을 정의합니다.
+  'logo-spin'이라는 이름의 애니메이션을 만듭니다.
+*/
 @keyframes logo-spin {
+  /* 시작 상태 (0도) */
   from {
     transform: rotate(0deg);
   }
+  /* 종료 상태 (360도 - 한 바퀴 회전) */
   to {
     transform: rotate(360deg);
   }
 }
 
+/* @media (prefers-reduced-motion: no-preference): 
+  사용자가 운영체제 설정에서 '동작 줄이기(Motion Reduction)'를 켜지 않았을 때만 실행합니다.
+  (어지러움을 느끼는 사용자를 배려하는 접근성 설정입니다.)
+*/
 @media (prefers-reduced-motion: no-preference) {
+  /* 두 번째 <a> 태그 안에 있는 .logo 요소에 애니메이션을 적용합니다. */
   a:nth-of-type(2) .logo {
+    /* logo-spin 애니메이션을 적용합니다.
+       infinite: 무한 반복
+       20s: 한 바퀴 도는 데 20초 걸림 (천천히 돔)
+       linear: 일정한 속도로 회전 (가속/감속 없음) */
     animation: logo-spin infinite 20s linear;
   }
 }
 
+/* .card: 카드 형태의 UI 컴포넌트 스타일입니다. 
+*/
 .card {
+  /* 내부 여백을 2em만큼 줍니다. */
   padding: 2em;
 }
 
+/* .read-the-docs: 문서 읽기 안내 문구의 스타일입니다. 
+*/
 .read-the-docs {
+  /* 글자 색상을 회색(#888)으로 설정하여 덜 강조되게 합니다. */
   color: #888;
 }

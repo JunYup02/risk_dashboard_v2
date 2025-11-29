@@ -1,63 +1,56 @@
 /**
- * [IndustryComparePage.jsx]
- * 선택한 기업의 재무 지표를 해당 '업종(Industry)' 평균과 비교하여 보여주는 분석 페이지입니다.
+ * [RegionComparePage.jsx]
+ * 선택한 기업의 재무 지표를 해당 기업이 위치한 '지역(Region)'의 평균 데이터와 비교하는 분석 페이지입니다.
  * * [주요 기능]
- * 1. 업종 데이터 조회: 선택한 기업이 속한 업종을 찾고, 해당 업종의 평균 데이터를 Supabase에서 가져옵니다.
- * 2. 이중 Y축 차트: 단위가 다른 지표(%, 배)를 하나의 그래프에 효과적으로 보여주기 위해 좌/우측 Y축을 분리합니다.
- * 3. 심층 분석 텍스트 생성: 단순 비교를 넘어, 재무적 의미(재무 건전성, 경쟁 우위 등)를 해석하여 문장으로 제공합니다.
+ * 1. 지역 데이터 조회: 기업의 지역 정보를 확인하고, 해당 지역의 평균 재무 지표를 Supabase에서 가져옵니다.
+ * 2. 이중 Y축 차트: 업종 비교와 마찬가지로 단위가 다른 지표들을 효과적으로 시각화합니다.
+ * 3. 심층 분석: 지역 평균 대비 내 기업의 재무적 위치를 해석하여 구체적인 코멘트를 제공합니다.
  */
 
 import React, { useState, useEffect } from "react";
 // 페이지 이동 및 데이터 전달용 훅
 import { useLocation, useNavigate } from "react-router-dom";
-// 차트 라이브러리 (Recharts)
+// 차트 라이브러리
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 // 데이터베이스 클라이언트
 import { supabase } from "../lib/supabaseClient";
 
-/* --- [컴포넌트] Analysis Card --- */
-// 각 지표(유동성, 안정성 등)별로 내 기업 vs 평균값을 비교해서 보여주는 카드 컴포넌트입니다.
+/* --- [컴포넌트] Analysis Card (디자인 동일) --- */
+// 각 지표별 수치 비교 카드를 렌더링하는 컴포넌트입니다.
+// IndustryComparePage의 카드와 동일한 디자인과 로직을 사용합니다.
 const AnalysisCard = ({ title, myValue, avgValue, status, diff, diffValue, bgColor }) => {
-    // 상태가 'excellent'(우수)인지 확인
+    // 상태에 따른 스타일 결정
     const isExcellent = status === 'excellent';
-    
-    // 상태에 따른 색상 스타일 결정 (Tailwind CSS 클래스)
-    const statusBgColor = isExcellent ? "bg-[#daffe0]" : "bg-[#ffdada]"; // 배경색
-    const statusBorderColor = isExcellent ? "border-[#cdf5d3]" : "border-[#f5cdcd]"; // 테두리색
-    const statusTextColor = isExcellent ? "text-[#017200]" : "text-[#ff1212]"; // 글자색
-    const statusText = isExcellent ? "우수" : "부족"; // 표시 텍스트
+    const statusBgColor = isExcellent ? "bg-[#daffe0]" : "bg-[#ffdada]";
+    const statusBorderColor = isExcellent ? "border-[#cdf5d3]" : "border-[#f5cdcd]";
+    const statusTextColor = isExcellent ? "text-[#017200]" : "text-[#ff1212]";
+    const statusText = isExcellent ? "우수" : "부족";
 
     return (
         <div className="relative w-full h-[210px]">
-            {/* 카드 배경 레이어 */}
+            {/* 배경 레이어 */}
             <div className={`absolute top-1 left-1 w-full h-full rounded-[15px] shadow-sm opacity-60 ${bgColor}`} />
-            
-            {/* 실제 콘텐츠 레이어 */}
+            {/* 콘텐츠 레이어 */}
             <div className="absolute top-0 left-0 w-full h-full bg-white rounded-[15px] shadow-md p-5 flex flex-col justify-between border border-gray-100">
-                {/* 1. 타이틀 */}
                 <div className="flex justify-end mb-1">
                     <h3 className="text-lg font-bold text-gray-700 tracking-tight">{title}</h3>
                 </div>
-                
-                {/* 2. 수치 비교 영역 */}
+                {/* 수치 비교 */}
                 <div className="flex items-end gap-3 mb-2">
-                    {/* 내 기업 */}
                     <div className="flex-1 flex flex-col items-center">
                          <span className="text-xs font-semibold text-gray-500 mb-1">내 기업</span>
                          <div className="w-full bg-white border-2 border-gray-100 rounded-xl py-3 flex items-center justify-center text-xl font-extrabold text-black shadow-sm">
                             {myValue}
                         </div>
                     </div>
-                    {/* 업종 평균 */}
                     <div className="flex-1 flex flex-col items-center">
-                        <span className="text-xs font-medium text-gray-400 mb-1">업종 평균</span>
+                        <span className="text-xs font-medium text-gray-400 mb-1">지역 평균</span>
                         <div className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 flex items-center justify-center text-xl font-bold text-gray-500">
                             {avgValue}
                         </div>
                     </div>
                 </div>
-                
-                {/* 3. 결과 요약 */}
+                {/* 결과 요약 */}
                 <div className={`w-full py-2 px-4 ${statusBgColor} border ${statusBorderColor} rounded-lg flex items-center justify-between`}>
                     <span className={`text-sm font-bold ${statusTextColor}`}>{diffValue}</span>
                     <span className={`text-sm font-bold ${statusTextColor}`}>{statusText}</span>
@@ -67,7 +60,7 @@ const AnalysisCard = ({ title, myValue, avgValue, status, diff, diffValue, bgCol
     );
 };
 
-export const IndustryComparePage = () => {
+export const RegionComparePage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     
@@ -75,52 +68,52 @@ export const IndustryComparePage = () => {
     const selectedCompany = location.state?.selectedCompany;
     const latestData = location.state?.latestData;
     
-    // [상태] 업종 평균 데이터 및 로딩
-    const [industryData, setIndustryData] = useState(null); 
+    // [상태] 지역 평균 데이터 및 로딩 상태
+    const [regionData, setRegionData] = useState(null); 
     const [loading, setLoading] = useState(true);
 
-    // [Effect] 업종 데이터 가져오기
+    // [Effect] 지역 데이터 조회
     useEffect(() => {
         if (!selectedCompany || !latestData) {
             setLoading(false);
             return;
         }
 
-        const fetchIndustryData = async () => {
+        const fetchRegionData = async () => {
             setLoading(true);
             try {
-                // 1단계: 내 기업의 업종 확인
+                // 1단계: 기업의 '지역(region)' 정보 확인
                 const { data: companyInfo } = await supabase
                     .from('companies')
-                    .select('industry')
+                    .select('region')
                     .eq('stock_code', selectedCompany.stock_code)
                     .single();
 
-                const industryName = companyInfo?.industry || selectedCompany.industry || 'Unknown';
+                const regionName = companyInfo?.region || selectedCompany.region || 'Unknown';
 
-                // 2단계: 업종 평균 데이터 조회
+                // 2단계: 해당 지역의 평균 데이터 조회 (region_averages 테이블)
                 const { data: avgData, error: avgError } = await supabase
-                    .from('industry_averages')
+                    .from('region_averages')
                     .select('avg_current_ratio, avg_debt_to_equity_ratio, avg_roe, avg_interest_coverage_ratio')
-                    .eq('industry', industryName)
+                    .eq('region', regionName)
                     .single();
 
                 if (avgError || !avgData) throw avgError;
 
-                setIndustryData({
+                setRegionData({
                     current_ratio: avgData.avg_current_ratio || 0,
                     debt_to_equity_ratio: avgData.avg_debt_to_equity_ratio || 0,
                     roe: avgData.avg_roe || 0,
                     interest_coverage_ratio: avgData.avg_interest_coverage_ratio || 0,
-                    industryName: industryName
+                    regionName: regionName
                 });
             } catch (error) {
-                console.error("업종 데이터 로드 실패:", error);
-                setIndustryData(null);
+                console.error("지역 데이터 로드 실패:", error);
+                setRegionData(null);
             }
             setLoading(false);
         };
-        fetchIndustryData();
+        fetchRegionData();
     }, [selectedCompany, latestData]);
 
     if (!selectedCompany || !latestData) {
@@ -138,13 +131,12 @@ export const IndustryComparePage = () => {
     const formatVal = (val, unit = '') => val ? `${Number(val).toFixed(0)}${unit}` : '0';
     const formatValDec = (val, unit = '') => val ? `${Number(val).toFixed(1)}${unit}` : '0';
 
-    // 분석 카드 생성 로직
+    // 분석 카드 데이터 생성
     const getAnalysisCards = () => {
-        if (!industryData) return [];
+        if (!regionData) return [];
         const c = latestData;
-        const i = industryData;
+        const r = regionData;
 
-        // 차이 계산 및 상태 판별
         const calcDiff = (my, avg, isHigherBetter = true) => {
             const diff = my - avg;
             const isGood = isHigherBetter ? diff > 0 : diff < 0;
@@ -155,30 +147,30 @@ export const IndustryComparePage = () => {
             };
         };
 
-        const liq = calcDiff(c.current_ratio, i.current_ratio, true);
-        const stab = calcDiff(c.debt_to_equity_ratio, i.debt_to_equity_ratio, false);
-        const prof = calcDiff(c.roe, i.roe, true);
-        const act = calcDiff(c.interest_coverage_ratio, i.interest_coverage_ratio, true);
+        const liq = calcDiff(c.current_ratio, r.current_ratio, true);
+        const stab = calcDiff(c.debt_to_equity_ratio, r.debt_to_equity_ratio, false);
+        const prof = calcDiff(c.roe, r.roe, true);
+        const act = calcDiff(c.interest_coverage_ratio, r.interest_coverage_ratio, true);
 
         return [
             { 
                 id: 'liquidity', title: '유동성', bgColor: 'bg-[#5252ff]',
-                myValue: formatVal(c.current_ratio, '%'), avgValue: formatVal(i.current_ratio, '%'),
+                myValue: formatVal(c.current_ratio, '%'), avgValue: formatVal(r.current_ratio, '%'),
                 status: liq.status, diffValue: `${liq.diffStr}% 차이`
             },
             { 
                 id: 'stability', title: '안정성', bgColor: 'bg-[#ff2912]',
-                myValue: formatVal(c.debt_to_equity_ratio, '%'), avgValue: formatVal(i.debt_to_equity_ratio, '%'),
+                myValue: formatVal(c.debt_to_equity_ratio, '%'), avgValue: formatVal(r.debt_to_equity_ratio, '%'),
                 status: stab.status, diffValue: `${stab.diffStr}% 차이`
             },
             { 
                 id: 'profitability', title: '수익성', bgColor: 'bg-[#24992e]',
-                myValue: formatValDec(c.roe, '%'), avgValue: formatValDec(i.roe, '%'),
+                myValue: formatValDec(c.roe, '%'), avgValue: formatValDec(r.roe, '%'),
                 status: prof.status, diffValue: `${prof.diffStr}% 차이`
             },
             { 
                 id: 'activity', title: '활동성', bgColor: 'bg-[#fcb124]',
-                myValue: formatValDec(c.interest_coverage_ratio, '배'), avgValue: formatValDec(i.interest_coverage_ratio, '배'),
+                myValue: formatValDec(c.interest_coverage_ratio, '배'), avgValue: formatValDec(r.interest_coverage_ratio, '배'),
                 status: act.status, diffValue: `${act.diffStr}배 차이`
             },
         ];
@@ -186,74 +178,71 @@ export const IndustryComparePage = () => {
 
     const analysisCards = getAnalysisCards();
 
-    // 이중 Y축 차트 데이터
-    const barChartData = industryData ? [
+    // 이중 Y축 차트 데이터 구성
+    const barChartData = regionData ? [
         { 
             name: '유동성', 
             '선택기업_L': Number(latestData.current_ratio?.toFixed(0)), 
-            '업종평균_L': Number(industryData.current_ratio?.toFixed(0)) 
+            '지역평균_L': Number(regionData.current_ratio?.toFixed(0)) 
         },
         { 
             name: '안정성', 
             '선택기업_L': Number(latestData.debt_to_equity_ratio?.toFixed(0)), 
-            '업종평균_L': Number(industryData.debt_to_equity_ratio?.toFixed(0)) 
+            '지역평균_L': Number(regionData.debt_to_equity_ratio?.toFixed(0)) 
         },
         { 
             name: '수익성', 
             '선택기업_R': Number(latestData.roe?.toFixed(1)), 
-            '업종평균_R': Number(industryData.roe?.toFixed(1)) 
+            '지역평균_R': Number(regionData.roe?.toFixed(1)) 
         },
         { 
             name: '활동성', 
             '선택기업_R': Number(latestData.interest_coverage_ratio?.toFixed(1)), 
-            '업종평균_R': Number(industryData.interest_coverage_ratio?.toFixed(1)) 
+            '지역평균_R': Number(regionData.interest_coverage_ratio?.toFixed(1)) 
         },
     ] : [];
 
     // --- [수정: 심층 분석 텍스트 강화] ---
-    // 단순히 높고 낮음이 아니라, 해당 지표의 의미(재무 건전성, 경쟁력 등)를 해석하여 문장을 생성합니다.
+    // 지역 데이터와 비교하여 재무적 의미를 해석하는 문장 생성
     const getAnalysisText = () => {
-        if(!industryData) return [];
-        const c = latestData; // 내 기업
-        const i = industryData; // 업종 평균
+        if(!regionData) return [];
+        const c = latestData;
+        const r = regionData;
 
-        // 소수점 0자리 문자열 반환 (예: 150)
-        const myLiq = c.current_ratio.toFixed(0);
-        const avgLiq = i.current_ratio.toFixed(0);
-        
-        // 차이값 계산
-        const liqDiff = (c.current_ratio - i.current_ratio).toFixed(0);
-        const stabDiff = (c.debt_to_equity_ratio - i.debt_to_equity_ratio).toFixed(0);
-        const profDiff = (c.roe - i.roe).toFixed(1);
+        // 문자열 변환 (소수점 제거 등)
+        const avgLiq = r.current_ratio.toFixed(0);
+        const liqDiff = (c.current_ratio - r.current_ratio).toFixed(0);
+        const stabDiff = (c.debt_to_equity_ratio - r.debt_to_equity_ratio).toFixed(0);
+        const profDiff = (c.roe - r.roe).toFixed(1);
 
         return [
             { 
-                icon: c.current_ratio >= i.current_ratio ? "✅" : "⚠️", 
-                title: "유동성(지급능력):", 
-                content: c.current_ratio >= i.current_ratio 
-                    ? `업종 평균(${avgLiq}%)보다 ${liqDiff}%p 높아 단기 채무 상환 능력이 매우 우수합니다. 위기 상황에서도 안정적인 자금 운용이 가능합니다.`
-                    : `업종 평균(${avgLiq}%) 대비 ${Math.abs(liqDiff)}%p 낮습니다. 단기적인 현금 흐름 압박이 있을 수 있으므로 유동 자산 확보가 필요해 보입니다.`
+                icon: c.current_ratio >= r.current_ratio ? "✅" : "⚠️", 
+                title: "유동성(지역비교):", 
+                content: c.current_ratio >= r.current_ratio 
+                    ? `같은 지역 기업 평균(${avgLiq}%)보다 유동 비율이 ${liqDiff}%p 높아 단기 자금 운용이 매우 원활합니다. 지역 내 경제 변동에도 유연하게 대처할 수 있습니다.`
+                    : `지역 평균보다 유동성이 낮습니다. 지역 내 경쟁 기업들에 비해 현금 흐름 관리에 어려움이 있을 수 있으니 단기 부채 상환 계획을 점검해야 합니다.`
             },
             { 
-                icon: c.debt_to_equity_ratio <= i.debt_to_equity_ratio ? "✅" : "⚠️", 
-                title: "안정성(재무구조):", 
-                content: c.debt_to_equity_ratio <= i.debt_to_equity_ratio
-                    ? `부채 비율이 업종 평균보다 낮아 재무 구조가 매우 건전합니다. 외부 자본 의존도가 낮아 금리 인상기에도 이자 부담이 적습니다.`
-                    : `업종 평균보다 부채 의존도가 높습니다(${stabDiff}%p 초과). 레버리지 효과를 고려하더라도 재무 리스크 관리가 필요한 시점입니다.`
+                icon: c.debt_to_equity_ratio <= r.debt_to_equity_ratio ? "✅" : "⚠️", 
+                title: "안정성(지역비교):", 
+                content: c.debt_to_equity_ratio <= r.debt_to_equity_ratio
+                    ? `지역 평균 대비 부채 의존도가 낮아 재무 구조가 탄탄합니다. 지역 금융 환경 변화나 금리 인상 리스크로부터 상대적으로 안전합니다.`
+                    : `지역 평균보다 부채 비율이 높습니다(${stabDiff}%p 초과). 지역 내 동종 기업들보다 금융 비용 부담이 클 수 있어 자본 확충이 필요할 수 있습니다.`
             },
             { 
-                icon: c.roe >= i.roe ? "✅" : "⚠️", 
-                title: "수익성(경쟁우위):", 
-                content: c.roe >= i.roe
-                    ? `ROE가 평균보다 높아(${profDiff}%p) 자본을 효율적으로 운용하고 있습니다. 동종 업계 내에서 확실한 경쟁 우위를 확보하고 있다는 신호입니다.`
-                    : `투자 자본 대비 수익성이 업종 평균에 미치지 못합니다. 비용 절감이나 매출 구조 개선을 통한 수익성 강화 전략이 시급합니다.`
+                icon: c.roe >= r.roe ? "✅" : "⚠️", 
+                title: "수익성(지역비교):", 
+                content: c.roe >= r.roe
+                    ? `해당 지역 내에서 높은 자본 효율성을 보여주고 있습니다(ROE +${profDiff}%p). 지역 경제 상황을 잘 활용하여 높은 수익을 창출하고 있는 우수 기업입니다.`
+                    : `지역 평균보다 투자 수익률이 낮습니다. 지역 특성에 맞는 비즈니스 모델 개선이나 비용 효율화 전략이 필요해 보입니다.`
             },
             { 
-                icon: c.interest_coverage_ratio >= i.interest_coverage_ratio ? "✅" : "⚠️", 
-                title: "활동성(상환여력):", 
-                content: c.interest_coverage_ratio >= i.interest_coverage_ratio
-                    ? `영업이익으로 이자 비용을 충분히 감당하고도 남을 만큼 채무 상환 능력이 탁월합니다. 재무적 곤경에 처할 위험이 매우 낮습니다.`
-                    : `영업이익 대비 이자 부담이 업종 평균보다 큽니다. 지속될 경우 한계 기업(좀비 기업)으로 분류될 위험이 있으니 주의가 필요합니다.`
+                icon: c.interest_coverage_ratio >= r.interest_coverage_ratio ? "✅" : "⚠️", 
+                title: "활동성(지역비교):", 
+                content: c.interest_coverage_ratio >= r.interest_coverage_ratio
+                    ? `지역 내 기업들보다 영업이익 대비 이자 감당 능력이 뛰어납니다. 불황기에도 버틸 수 있는 기초 체력이 튼튼합니다.`
+                    : `이자 보상 능력이 지역 평균에 미치지 못합니다. 영업 이익을 늘리거나 차입금 규모를 줄여 금융 비용 부담을 완화해야 합니다.`
             },
         ];
     };
@@ -270,15 +259,10 @@ export const IndustryComparePage = () => {
                 >
                     ← Back
                 </button>
-
-                <h1 className="font-normal text-white text-8xl tracking-[-2.40px] leading-[30px] mb-8 font-serif">
-                    B.S.B
-                </h1>
-                
+                <h1 className="font-normal text-white text-8xl tracking-[-2.40px] leading-[30px] mb-8 font-serif">B.S.B</h1>
                 <div className="text-white text-3xl font-semibold tracking-[-0.75px] mb-4 opacity-90">
-                    업종 평균과 비교 분석 ({industryData?.industryName || '업종 정보 없음'})
+                    지역 평균과 비교 분석 ({regionData?.regionName || '지역 정보 없음'})
                 </div>
-                
                 <h2 className="text-white text-6xl font-medium tracking-[-0.75px] mb-12">
                     {selectedCompany.company_name}
                 </h2>
@@ -294,14 +278,12 @@ export const IndustryComparePage = () => {
                         일반 분석
                     </button>
                     <button
-                        className="px-8 py-3 text-lg font-medium transition-colors bg-white text-[#1d192b] border-r border-[#79747e]"
+                        onClick={() => navigate('/industry-compare', { state: location.state })}
+                        className="px-8 py-3 text-lg font-medium transition-colors bg-black text-white border-r border-[#79747e] hover:bg-gray-900"
                     >
                         업종 대비
                     </button>
-                    <button
-                        onClick={() => navigate('/region-compare', { state: location.state })}
-                        className="px-8 py-3 text-lg font-medium transition-colors bg-black text-white hover:bg-gray-900"
-                    >
+                    <button className="px-8 py-3 text-lg font-medium transition-colors bg-white text-[#1d192b]">
                         지역 대비
                     </button>
                 </div>
@@ -313,26 +295,42 @@ export const IndustryComparePage = () => {
                 {/* 차트 섹션 */}
                 <div className="relative w-full max-w-[1107px] h-[520px] mx-auto bg-[#191e22] rounded-[15px] p-8 shadow-2xl overflow-hidden">
                     <h2 className="text-white text-2xl font-semibold text-center mb-8">
-                        기업 vs 업종 평균 지표 비교
+                        기업 vs 지역 평균 지표 비교
                     </h2>
-                    
                     <div className="w-full h-[400px]">
-                         {industryData ? (
+                         {regionData ? (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={barChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }} barGap={8}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#444" />
+                                    
                                     <XAxis dataKey="name" tick={{ fill: 'white', fontSize: 14, fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                                    <YAxis yAxisId="left" orientation="left" tick={{ fill: 'white' }} axisLine={false} tickLine={false} />
-                                    <YAxis yAxisId="right" orientation="right" tick={{ fill: '#ffa500' }} axisLine={false} tickLine={false} />
+                                    
+                                    <YAxis 
+                                        yAxisId="left" 
+                                        orientation="left" 
+                                        tick={{ fill: 'white' }} 
+                                        axisLine={false} 
+                                        tickLine={false} 
+                                    />
+                                    <YAxis 
+                                        yAxisId="right" 
+                                        orientation="right" 
+                                        tick={{ fill: '#ffa500' }} 
+                                        axisLine={false} 
+                                        tickLine={false} 
+                                    />
+
                                     <Tooltip 
                                         cursor={{fill: 'rgba(255,255,255,0.1)'}}
                                         contentStyle={{ backgroundColor: '#333', border: 'none', borderRadius: '8px', color: 'white' }}
                                     />
                                     <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+                                    
                                     <Bar yAxisId="left" name="선택한 기업" dataKey="선택기업_L" fill="#1717ff" radius={[10, 10, 0, 0]} barSize={40} />
-                                    <Bar yAxisId="left" name="업종 평균" dataKey="업종평균_L" fill="#c0c0c0" radius={[10, 10, 0, 0]} barSize={40} />
+                                    <Bar yAxisId="left" name="지역 평균" dataKey="지역평균_L" fill="#c0c0c0" radius={[10, 10, 0, 0]} barSize={40} />
+
                                     <Bar yAxisId="right" name="선택한 기업" dataKey="선택기업_R" fill="#1717ff" radius={[10, 10, 0, 0]} barSize={40} legendType="none" />
-                                    <Bar yAxisId="right" name="업종 평균" dataKey="업종평균_R" fill="#c0c0c0" radius={[10, 10, 0, 0]} barSize={40} legendType="none" />
+                                    <Bar yAxisId="right" name="지역 평균" dataKey="지역평균_R" fill="#c0c0c0" radius={[10, 10, 0, 0]} barSize={40} legendType="none" />
                                 </BarChart>
                             </ResponsiveContainer>
                         ) : (
@@ -351,7 +349,7 @@ export const IndustryComparePage = () => {
                 {/* 심층 분석 텍스트 섹션 */}
                 <div className="relative w-full max-w-[1082px] mx-auto min-h-[200px] bg-white rounded-[10px] shadow-lg p-8 flex items-center">
                      <div className="w-full">
-                        <h3 className="text-center text-[22px] font-medium mb-6">지표별 심층 분석</h3>
+                        <h3 className="text-center text-[22px] font-medium mb-6">지표별 심층 분석 (지역 기준)</h3>
                         <div className="space-y-4">
                             {analysisPoints.map((point, idx) => (
                                 <p key={idx} className="text-[15px] text-black leading-relaxed">
