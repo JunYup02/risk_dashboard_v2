@@ -1,4 +1,3 @@
-````markdown
 # B.S.B (Balance Sheet Board) - 기업 위험지수 분석 대시보드
 
 ## 📖 프로젝트 소개 (About Project)
@@ -57,7 +56,7 @@ risk_dashboard_v2/
 │   └── ...config files
 ├── requirements.txt       # 파이썬 의존성 목록
 └── README.md              # 프로젝트 설명 문서
-````
+```
 
 -----
 
@@ -182,4 +181,3 @@ Supabase SQL Editor에서 다음 테이블을 생성해야 합니다.
     위 README의 설치 방법 섹션에 있는 `.env` 설정 가이드에서, 실제 키 값(`your_supabase_url` 등)은 비워두고 설명만 적어두었습니다. 이는 보안을 위해 올바른 방식입니다. 실제 키가 포함된 파일을 커밋하지 않도록 주의하세요.
 
 이제 이 내용을 `README.md` 파일에 저장하시면 됩니다!
-````
