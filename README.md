@@ -1,10 +1,6 @@
 ````markdown
 # B.S.B (Balance Sheet Board) - 기업 위험지수 분석 대시보드
 
-![Project Status](https://img.shields.io/badge/Status-Active-success)
-![Version](https://img.shields.io/badge/Version-v2.0-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
-
 ## 📖 프로젝트 소개 (About Project)
 
 **B.S.B (Balance Sheet Board)**는 기업의 재무 데이터를 기반으로 위험 지수를 자동으로 산출하고 시각화하여 제공하는 웹 기반 대시보드 시스템입니다.
